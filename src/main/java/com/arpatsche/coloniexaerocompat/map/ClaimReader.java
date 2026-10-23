@@ -1,10 +1,12 @@
 package com.arpatsche.coloniexaerocompat.map;
 
 import com.arpatsche.coloniexaerocompat.cache.ClaimCache;
+import com.arpatsche.coloniexaerocompat.cache.ColonyInfoCache;
 import com.minecolonies.api.colony.IColonyManager;
 import com.minecolonies.api.colony.IColonyView;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -121,14 +123,16 @@ public class ClaimReader extends ElementReader<ClaimElement, ClaimContext, Claim
         ResourceKey<Level> dimension = context.dimension != null ? context.dimension : level.dimension();
         int claimCount = ClaimCache.getClaims(dimension, element.colonyId()).size();
         IColonyView colony = IColonyManager.getInstance().getColonyView(element.colonyId(), dimension);
+        BlockPos center = colony != null ? colony.getCenter()
+                : ColonyInfoCache.getCenter(dimension, element.colonyId());
 
         List<Component> lines = new ArrayList<>();
         lines.add(Component.literal(element.colonyName()).withStyle(ChatFormatting.GOLD));
         lines.add(Component.literal("ID: " + element.colonyId()));
         lines.add(Component.literal("Dimension: " + dimension.location()));
         lines.add(Component.literal("Chunks: " + claimCount));
-        if (colony != null) {
-            lines.add(Component.literal("Center: " + colony.getCenter().toShortString()));
+        if (center != null) {
+            lines.add(Component.literal("Center: " + center.toShortString()));
         }
         return new MultiLineTooltip(lines);
     }

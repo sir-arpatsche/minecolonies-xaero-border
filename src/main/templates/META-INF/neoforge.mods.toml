@@ -100,7 +100,7 @@ Client-side only, the server does not need this mod.
     type = "required"
     versionRange = "[1.1.1,)"
     ordering = "NONE"
-    side = "CLIENT"
+    side = "BOTH"
 
 [[dependencies.${mod_id}]]
     modId = "xaeroworldmap"

@@ -1,9 +1,11 @@
 package com.arpatsche.coloniexaerocompat.client;
 
-import com.arpatsche.coloniexaerocompat.cache.ClaimCache;
-import com.arpatsche.coloniexaerocompat.map.ClaimRenderer;
-import com.arpatsche.coloniexaerocompat.cache.ClaimStorage;
 import com.arpatsche.coloniexaerocompat.ColonyXaeroCompat;
+import com.arpatsche.coloniexaerocompat.cache.BuildingCache;
+import com.arpatsche.coloniexaerocompat.cache.ClaimCache;
+import com.arpatsche.coloniexaerocompat.cache.ClaimStorage;
+import com.arpatsche.coloniexaerocompat.map.BuildingRenderer;
+import com.arpatsche.coloniexaerocompat.map.ClaimRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
@@ -49,6 +51,7 @@ public class ColonyXaeroClient {
         }
 
         ClaimCache.update(level);
+        BuildingCache.update(level);
     }
 
     @SubscribeEvent
@@ -67,7 +70,8 @@ public class ColonyXaeroClient {
             return;
         }
         handler.add(new ClaimRenderer());
+        handler.add(new BuildingRenderer());
         registeredHandler = handler;
-        ColonyXaeroCompat.LOGGER.info("ClaimRenderer logged in Xaero's World Map");
+        ColonyXaeroCompat.LOGGER.info("ClaimRenderer registered with Xaero's World Map");
     }
 }

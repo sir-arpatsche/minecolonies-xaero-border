@@ -94,7 +94,16 @@ neoForge {
             // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
             logLevel = org.slf4j.event.Level.DEBUG
         }
+
+        client2 {
+            client()
+            gameDirectory = file('run2')
+            programArgument '--username'
+            programArgument 'Dev2'
+        }
     }
+
+
 
     mods {
         // define mod <-> source bindings
