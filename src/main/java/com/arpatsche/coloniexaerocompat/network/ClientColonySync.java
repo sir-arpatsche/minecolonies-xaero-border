@@ -37,7 +37,7 @@ public final class ClientColonySync {
 
         ColonyInfoCache.put(colony.dimension(), colony.id(), colony.name(), colony.center());
 
-        ColonyXaeroCompat.LOGGER.info("[client] received colony '{}' (ID {}) in {}: {} chunks, {} buildings",
+        ColonyXaeroCompat.LOGGER.debug("[client] received colony '{}' (ID {}) in {}: {} chunks, {} buildings",
                 colony.name(), colony.id(), colony.dimension().location(), chunks.size(), buildings.size());
     }
 
@@ -47,7 +47,7 @@ public final class ClientColonySync {
         ClaimCache.removeColony(ref.dimension(), ref.id());
         BuildingCache.removeColony(ref.dimension(), ref.id());
         ColonyInfoCache.remove(ref.dimension(), ref.id());
-        ColonyXaeroCompat.LOGGER.info("[client] colony {} in {} was removed",
+        ColonyXaeroCompat.LOGGER.debug("[client] colony {} in {} was removed",
                 ref.id(), ref.dimension().location());
     }
 
@@ -57,7 +57,7 @@ public final class ClientColonySync {
         int removed = ClaimCache.retainOnly(keep)
                 + BuildingCache.retainOnly(keep)
                 + ColonyInfoCache.retainOnly(keep);
-        ColonyXaeroCompat.LOGGER.info("[client] server knows {} colonies; dropped {} outdated cache entries",
+        ColonyXaeroCompat.LOGGER.debug("[client] server knows {} colonies; dropped {} outdated cache entries",
                 keep.size(), removed);
     }
 }

@@ -1,6 +1,7 @@
 package com.arpatsche.coloniexaerocompat.network;
 
 import com.arpatsche.coloniexaerocompat.ColonyXaeroCompat;
+import com.arpatsche.coloniexaerocompat.config.ServerConfig;
 import com.arpatsche.coloniexaerocompat.server.ColonyData;
 import com.arpatsche.coloniexaerocompat.server.ColonyRef;
 import com.arpatsche.coloniexaerocompat.server.ServerColonyReader;
@@ -26,7 +27,7 @@ import java.util.Set;
 
 /**
  * Sends the colony data to players: everything when they join, afterwards only what changed,
- * and a notice when a colony no longer exists.
+ * and a notice when a colony no longer exists. What is sent follows ServerConfig.
  * Runs on the server (also the integrated server of singleplayer).
  */
 @EventBusSubscriber(modid = ColonyXaeroCompat.MODID)
@@ -40,6 +41,15 @@ public class ServerColonySync {
         return dimension.location() + "#" + id;
     }
 
+    /** What the config allows us to send for this colony. */
+    private static ColonyData prepare(ColonyData colony) {
+        if (ServerConfig.shareBuildings()) {
+            return colony;
+        }
+        return new ColonyData(colony.id(), colony.name(), colony.center(), colony.dimension(),
+                colony.chunks(), List.of());
+    }
+
     @SubscribeEvent
     static void onServerStarting(ServerStartingEvent event) {
         LAST_SENT.clear(); // singleplayer reuses the JVM for the next world
@@ -48,6 +58,9 @@ public class ServerColonySync {
     // A player joined: first the list of all existing colonies, then every colony.
     @SubscribeEvent
     static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (ServerConfig.shareMode() == ServerConfig.ShareMode.OFF) {
+            return;
+        }
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
@@ -60,30 +73,35 @@ public class ServerColonySync {
         send(player, new ColonyListPayload(List.copyOf(refs)));
 
         for (ColonyData colony : colonies) {
-            send(player, new ColonySyncPayload(colony));
+            send(player, new ColonySyncPayload(prepare(colony)));
         }
     }
 
-    // Every 5 seconds: send what changed to everyone, and report colonies that are gone.
+    // Regularly: send what changed to everyone, and report colonies that are gone.
     @SubscribeEvent
     static void onServerTick(ServerTickEvent.Post event) {
         counter++;
-        if (counter < 100) {
+        if (counter < ServerConfig.checkIntervalTicks()) {
             return;
         }
         counter = 0;
+
+        if (ServerConfig.shareMode() == ServerConfig.ShareMode.OFF) {
+            return;
+        }
 
         MinecraftServer server = event.getServer();
         Set<String> present = new HashSet<>();
 
         for (ColonyData colony : ServerColonyReader.readAll()) {
+            ColonyData toSend = prepare(colony);
             String key = key(colony.dimension(), colony.id());
             present.add(key);
-            if (colony.equals(LAST_SENT.get(key))) {
+            if (toSend.equals(LAST_SENT.get(key))) {
                 continue;
             }
-            LAST_SENT.put(key, colony);
-            broadcast(server, new ColonySyncPayload(colony));
+            LAST_SENT.put(key, toSend);
+            broadcast(server, new ColonySyncPayload(toSend));
         }
 
         // Colonies we sent earlier that no longer exist

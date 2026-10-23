@@ -35,7 +35,7 @@ public final class ClaimStorage {
     public static void onLogin() {
         clearAll();
         currentFile = resolveFile();
-        ColonyXaeroCompat.LOGGER.info("Cache file for this world: {} (exists: {})",
+        ColonyXaeroCompat.LOGGER.debug("Cache file for this world: {} (exists: {})",
                 currentFile, currentFile != null && Files.exists(currentFile));
         if (currentFile == null || !Files.exists(currentFile)) {
             return;
@@ -105,7 +105,7 @@ public final class ClaimStorage {
             ClaimCache.markClean();
             BuildingCache.markClean();
             ColonyInfoCache.markClean();
-            ColonyXaeroCompat.LOGGER.info("Cache saved: {}", currentFile);
+            ColonyXaeroCompat.LOGGER.debug("Cache saved: {}", currentFile);
         } catch (Exception e) {
             ColonyXaeroCompat.LOGGER.warn("Could not save cache: {}", currentFile, e);
         }
