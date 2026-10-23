@@ -4,6 +4,8 @@ import com.minecolonies.api.colony.IColony;
 import com.minecolonies.api.colony.IColonyManager;
 import com.minecolonies.api.colony.buildings.IBuilding;
 import com.minecolonies.api.colony.claim.IChunkClaimData;
+import com.minecolonies.api.colony.permissions.IPermissions;
+import com.minecolonies.api.colony.permissions.Rank;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -15,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Reads all colonies, their claimed chunks and their buildings from MineColonies' server-side data.
@@ -24,6 +27,26 @@ import java.util.Set;
 public final class ServerColonyReader {
 
     private ServerColonyReader() {
+    }
+
+    /**
+     * True if the player owns the colony or is an officer or friend in it.
+     * Anything unclear counts as "not a member", so nothing is shown by mistake.
+     */
+    public static boolean isMember(UUID player, ColonyRef ref) {
+        IColony colony = IColonyManager.getInstance().getColonyByDimension(ref.id(), ref.dimension());
+        if (colony == null) {
+            return false;
+        }
+        IPermissions permissions = colony.getPermissions();
+        if (player.equals(permissions.getOwner())) {
+            return true;
+        }
+        Rank rank = permissions.getRank(player);
+        return rank != null
+                && (rank.equals(permissions.getRankOwner())
+                || rank.equals(permissions.getRankOfficer())
+                || rank.equals(permissions.getRankFriend()));
     }
 
     public static List<ColonyData> readAll() {

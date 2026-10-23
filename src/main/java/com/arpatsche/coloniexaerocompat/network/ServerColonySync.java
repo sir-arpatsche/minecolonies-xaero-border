@@ -24,17 +24,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
- * Sends the colony data to players: everything when they join, afterwards only what changed,
- * and a notice when a colony no longer exists. What is sent follows ServerConfig.
+ * Sends colony data to the players who have this mod: everything they are allowed to see when
+ * they join, afterwards only what changed, and a notice when a colony disappears for them
+ * (deleted, or they are no longer a member). What is allowed follows ServerConfig.
  * Runs on the server (also the integrated server of singleplayer).
  */
 @EventBusSubscriber(modid = ColonyXaeroCompat.MODID)
 public class ServerColonySync {
 
-    // what we sent last, per colony ("dimension#id"), to detect changes and deletions
-    private static final Map<String, ColonyData> LAST_SENT = new HashMap<>();
+    // per player: what we sent them last, per colony ("dimension#id")
+    private static final Map<UUID, Map<String, ColonyData>> SENT = new HashMap<>();
     private static int counter = 0;
 
     private static String key(ResourceKey<Level> dimension, int id) {
@@ -50,34 +52,66 @@ public class ServerColonySync {
                 colony.chunks(), List.of());
     }
 
-    @SubscribeEvent
-    static void onServerStarting(ServerStartingEvent event) {
-        LAST_SENT.clear(); // singleplayer reuses the JVM for the next world
+    private static boolean canSee(ServerPlayer player, ColonyData colony) {
+        return switch (ServerConfig.shareMode()) {
+            case ALL -> true;
+            case OFF -> false;
+            case MEMBERS -> (ServerConfig.opsSeeAll() && player.hasPermissions(2))
+                    || ServerColonyReader.isMember(player.getUUID(), new ColonyRef(colony.dimension(), colony.id()));
+        };
     }
 
-    // A player joined: first the list of all existing colonies, then every colony.
+    private static boolean hasMod(ServerPlayer player) {
+        return player.connection.hasChannel(ColonySyncPayload.TYPE);
+    }
+
+    @SubscribeEvent
+    static void onServerStarting(ServerStartingEvent event) {
+        SENT.clear(); // singleplayer reuses the JVM for the next world
+    }
+
+    @SubscribeEvent
+    static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        SENT.remove(event.getEntity().getUUID());
+    }
+
+    // A player joined: first the list of the colonies they may see, then each of those colonies.
     @SubscribeEvent
     static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (ServerConfig.shareMode() == ServerConfig.ShareMode.OFF) {
             return;
         }
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || !hasMod(player)) {
             return;
         }
-        List<ColonyData> colonies = ServerColonyReader.readAll();
+
+        List<ColonyData> all = ServerColonyReader.readAll();
+        List<ColonyData> visible = new ArrayList<>();
+        for (ColonyData colony : all) {
+            if (canSee(player, colony)) {
+                visible.add(colony);
+            }
+        }
 
         List<ColonyRef> refs = new ArrayList<>();
-        for (ColonyData colony : colonies) {
+        for (ColonyData colony : visible) {
             refs.add(new ColonyRef(colony.dimension(), colony.id()));
         }
         send(player, new ColonyListPayload(List.copyOf(refs)));
 
-        for (ColonyData colony : colonies) {
-            send(player, new ColonySyncPayload(prepare(colony)));
+        Map<String, ColonyData> sent = new HashMap<>();
+        for (ColonyData colony : visible) {
+            ColonyData prepared = prepare(colony);
+            send(player, new ColonySyncPayload(prepared));
+            sent.put(key(colony.dimension(), colony.id()), prepared);
         }
+        SENT.put(player.getUUID(), sent);
+
+        ColonyXaeroCompat.LOGGER.debug("[server] {} may see {} of {} colonies (mode {})",
+                player.getGameProfile().getName(), visible.size(), all.size(), ServerConfig.shareMode());
     }
 
-    // Regularly: send what changed to everyone, and report colonies that are gone.
+    // Regularly: bring every player up to date.
     @SubscribeEvent
     static void onServerTick(ServerTickEvent.Post event) {
         counter++;
@@ -91,41 +125,42 @@ public class ServerColonySync {
         }
 
         MinecraftServer server = event.getServer();
-        Set<String> present = new HashSet<>();
+        List<ColonyData> all = ServerColonyReader.readAll();
 
-        for (ColonyData colony : ServerColonyReader.readAll()) {
-            ColonyData toSend = prepare(colony);
-            String key = key(colony.dimension(), colony.id());
-            present.add(key);
-            if (toSend.equals(LAST_SENT.get(key))) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (!hasMod(player)) {
                 continue;
             }
-            LAST_SENT.put(key, toSend);
-            broadcast(server, new ColonySyncPayload(toSend));
-        }
+            Map<String, ColonyData> sent = SENT.computeIfAbsent(player.getUUID(), k -> new HashMap<>());
+            Set<String> visibleKeys = new HashSet<>();
 
-        // Colonies we sent earlier that no longer exist
-        Iterator<Map.Entry<String, ColonyData>> iterator = LAST_SENT.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, ColonyData> entry = iterator.next();
-            if (!present.contains(entry.getKey())) {
-                ColonyData gone = entry.getValue();
-                broadcast(server, new ColonyRemovedPayload(new ColonyRef(gone.dimension(), gone.id())));
-                iterator.remove();
+            for (ColonyData colony : all) {
+                if (!canSee(player, colony)) {
+                    continue;
+                }
+                ColonyData prepared = prepare(colony);
+                String key = key(colony.dimension(), colony.id());
+                visibleKeys.add(key);
+                if (!prepared.equals(sent.get(key))) {
+                    send(player, new ColonySyncPayload(prepared));
+                    sent.put(key, prepared);
+                }
             }
-        }
-    }
 
-    private static void broadcast(MinecraftServer server, CustomPacketPayload payload) {
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            send(player, payload);
+            // Colonies this player had but may no longer see (deleted, or no longer a member)
+            Iterator<Map.Entry<String, ColonyData>> iterator = sent.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, ColonyData> entry = iterator.next();
+                if (!visibleKeys.contains(entry.getKey())) {
+                    ColonyData gone = entry.getValue();
+                    send(player, new ColonyRemovedPayload(new ColonyRef(gone.dimension(), gone.id())));
+                    iterator.remove();
+                }
+            }
         }
     }
 
     private static void send(ServerPlayer player, CustomPacketPayload payload) {
-        // Only send to players who have this mod (the messages are optional).
-        if (player.connection.hasChannel(payload.type())) {
-            PacketDistributor.sendToPlayer(player, payload);
-        }
+        PacketDistributor.sendToPlayer(player, payload);
     }
 }

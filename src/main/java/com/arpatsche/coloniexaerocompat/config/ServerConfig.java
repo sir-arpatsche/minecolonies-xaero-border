@@ -11,6 +11,8 @@ public final class ServerConfig {
     public enum ShareMode {
         /** Every player with the mod gets all colonies. */
         ALL,
+        /** Players only get the colonies they own or are an officer or friend in. */
+        MEMBERS,
         /** The server sends nothing. */
         OFF
     }
@@ -18,6 +20,7 @@ public final class ServerConfig {
     public static final ModConfigSpec SPEC;
 
     private static final ModConfigSpec.EnumValue<ShareMode> SHARE_MODE;
+    private static final ModConfigSpec.BooleanValue OPS_SEE_ALL;
     private static final ModConfigSpec.BooleanValue SHARE_BUILDINGS;
     private static final ModConfigSpec.IntValue CHECK_INTERVAL_SECONDS;
 
@@ -26,9 +29,13 @@ public final class ServerConfig {
 
         builder.comment("What this server tells players who have the mod installed.").push("sharing");
         SHARE_MODE = builder
-                .comment("ALL = every player with the mod gets the claims and buildings of all colonies.",
+                .comment("MEMBERS = a player only gets the colonies they own or are an officer or friend in.",
+                        "ALL = every player with the mod gets the claims and buildings of all colonies.",
                         "OFF = this server sends nothing; players only see what they discover themselves.")
-                .defineEnum("shareMode", ShareMode.ALL);
+                .defineEnum("shareMode", ShareMode.MEMBERS);
+        OPS_SEE_ALL = builder
+                .comment("true = server operators (permission level 2 or higher) get all colonies, even in MEMBERS mode.")
+                .define("opsSeeAll", true);
         SHARE_BUILDINGS = builder
                 .comment("false = send only the claimed area, name and centre of a colony, not its buildings.")
                 .define("shareBuildings", true);
@@ -47,7 +54,12 @@ public final class ServerConfig {
     }
 
     public static ShareMode shareMode() {
-        return SPEC.isLoaded() ? SHARE_MODE.get() : ShareMode.ALL;
+        // Until the file is loaded, share as little as possible.
+        return SPEC.isLoaded() ? SHARE_MODE.get() : ShareMode.MEMBERS;
+    }
+
+    public static boolean opsSeeAll() {
+        return !SPEC.isLoaded() || OPS_SEE_ALL.get();
     }
 
     public static boolean shareBuildings() {
