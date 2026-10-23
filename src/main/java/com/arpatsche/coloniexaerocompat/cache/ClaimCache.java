@@ -92,6 +92,15 @@ public final class ClaimCache {
         return new HashSet<>(dimClaims.keySet());
     }
 
+    /** Replaces the remembered chunks of a colony (used for data from the server). */
+    public static void setClaims(ResourceKey<Level> dimension, int colonyId, Set<ChunkPos> chunks) {
+        Map<Integer, Set<ChunkPos>> dimClaims = CLAIMS.computeIfAbsent(dimension, k -> new HashMap<>());
+        if (!chunks.equals(dimClaims.get(colonyId))) {
+            dimClaims.put(colonyId, new HashSet<>(chunks));
+            dirty = true;
+        }
+    }
+
     public static void clear() {
         CLAIMS.clear();
         dirty = false;

@@ -61,6 +61,15 @@ public final class BuildingCache {
         return dimBuildings.getOrDefault(colonyId, Set.of());
     }
 
+    /** Replaces the remembered buildings of a colony (used for data from the server). */
+    public static void setBuildings(ResourceKey<Level> dimension, int colonyId, Set<Info> buildings) {
+        Map<Integer, Set<Info>> dimBuildings = BUILDINGS.computeIfAbsent(dimension, k -> new HashMap<>());
+        if (!buildings.equals(dimBuildings.get(colonyId))) {
+            dimBuildings.put(colonyId, new HashSet<>(buildings));
+            dirty = true;
+        }
+    }
+
     /** Ids of all colonies that have remembered buildings in the given dimension. */
     public static Set<Integer> getColonyIds(ResourceKey<Level> dimension) {
         Map<Integer, Set<Info>> dimBuildings = BUILDINGS.get(dimension);

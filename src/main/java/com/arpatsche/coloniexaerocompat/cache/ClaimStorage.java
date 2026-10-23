@@ -12,7 +12,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-
+/**
+ * Saves and loads ClaimCache, BuildingCache and ColonyInfoCache as one JSON file per world,
+ * inside the "coloniexaerocompat" folder of the game directory.
+ */
 public final class ClaimStorage {
 
     // File of the world we are currently in. Remembered at login so it does not
@@ -22,10 +25,18 @@ public final class ClaimStorage {
     private ClaimStorage() {
     }
 
-    public static void onLogin() {
+    private static void clearAll() {
         ClaimCache.clear();
         BuildingCache.clear();
+        ColonyInfoCache.clear();
+    }
+
+    /** On entering a world: work out the file and load the caches. */
+    public static void onLogin() {
+        clearAll();
         currentFile = resolveFile();
+        ColonyXaeroCompat.LOGGER.info("Cache file for this world: {} (exists: {})",
+                currentFile, currentFile != null && Files.exists(currentFile));
         if (currentFile == null || !Files.exists(currentFile)) {
             return;
         }
@@ -37,29 +48,34 @@ public final class ClaimStorage {
             if (root.has("buildings")) {
                 BuildingCache.fromJson(root.getAsJsonObject("buildings"));
             }
+            if (root.has("colonies")) {
+                ColonyInfoCache.fromJson(root.getAsJsonObject("colonies"));
+            }
             ColonyXaeroCompat.LOGGER.info("Cache loaded: {} ({} buildings)", currentFile, BuildingCache.totalCount());
         } catch (Exception e) {
             ColonyXaeroCompat.LOGGER.warn("Could not read cache: {}", currentFile, e);
-            ClaimCache.clear();
-            BuildingCache.clear();
+            clearAll();
         }
     }
 
+    /** On leaving a world: save and empty the caches. */
     public static void onLogout() {
         saveIfDirty();
         currentFile = null;
-        ClaimCache.clear();
-        BuildingCache.clear();
+        clearAll();
     }
 
+    /** Saves only if something changed since the last save. */
     public static void saveIfDirty() {
-        if (currentFile == null || !(ClaimCache.isDirty() || BuildingCache.isDirty())) {
+        if (currentFile == null
+                || !(ClaimCache.isDirty() || BuildingCache.isDirty() || ColonyInfoCache.isDirty())) {
             return;
         }
         try {
             JsonObject root = new JsonObject();
             root.add("claims", ClaimCache.toJson());
             root.add("buildings", BuildingCache.toJson());
+            root.add("colonies", ColonyInfoCache.toJson());
 
             Files.createDirectories(currentFile.getParent());
             // Write to a temp file first, then replace: if the game crashes mid-write,
@@ -69,11 +85,14 @@ public final class ClaimStorage {
             Files.move(temp, currentFile, StandardCopyOption.REPLACE_EXISTING);
             ClaimCache.markClean();
             BuildingCache.markClean();
+            ColonyInfoCache.markClean();
+            ColonyXaeroCompat.LOGGER.info("Cache saved: {}", currentFile);
         } catch (Exception e) {
             ColonyXaeroCompat.LOGGER.warn("Could not save cache: {}", currentFile, e);
         }
     }
 
+    /** Works out the file for the current world or server. */
     private static Path resolveFile() {
         Minecraft mc = Minecraft.getInstance();
         String key;
