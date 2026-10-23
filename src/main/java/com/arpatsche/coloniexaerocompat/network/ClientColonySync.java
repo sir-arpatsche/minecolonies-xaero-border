@@ -6,6 +6,7 @@ import com.arpatsche.coloniexaerocompat.cache.ClaimCache;
 import com.arpatsche.coloniexaerocompat.cache.ColonyInfoCache;
 import com.arpatsche.coloniexaerocompat.server.BuildingData;
 import com.arpatsche.coloniexaerocompat.server.ColonyData;
+import com.arpatsche.coloniexaerocompat.server.ColonyRef;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -21,6 +22,7 @@ public final class ClientColonySync {
     private ClientColonySync() {
     }
 
+    /** One colony's claims and buildings (on joining, and whenever they change). */
     public static void handle(ColonySyncPayload payload, IPayloadContext context) {
         ColonyData colony = payload.colony();
 
@@ -37,9 +39,25 @@ public final class ClientColonySync {
 
         ColonyXaeroCompat.LOGGER.info("[client] received colony '{}' (ID {}) in {}: {} chunks, {} buildings",
                 colony.name(), colony.id(), colony.dimension().location(), chunks.size(), buildings.size());
-        ColonyXaeroCompat.LOGGER.info("[client] caches now hold {} chunks and {} buildings for colony {}; colonies with claims here: {}",
-                ClaimCache.getClaims(colony.dimension(), colony.id()).size(),
-                BuildingCache.getBuildings(colony.dimension(), colony.id()).size(),
-                colony.id(), ClaimCache.getColonyIds(colony.dimension()));
+    }
+
+    /** A colony was deleted while we are online. */
+    public static void handleRemoved(ColonyRemovedPayload payload, IPayloadContext context) {
+        ColonyRef ref = payload.colony();
+        ClaimCache.removeColony(ref.dimension(), ref.id());
+        BuildingCache.removeColony(ref.dimension(), ref.id());
+        ColonyInfoCache.remove(ref.dimension(), ref.id());
+        ColonyXaeroCompat.LOGGER.info("[client] colony {} in {} was removed",
+                ref.id(), ref.dimension().location());
+    }
+
+    /** All colonies that exist on the server. Everything else we remembered is outdated. */
+    public static void handleList(ColonyListPayload payload, IPayloadContext context) {
+        Set<ColonyRef> keep = new HashSet<>(payload.colonies());
+        int removed = ClaimCache.retainOnly(keep)
+                + BuildingCache.retainOnly(keep)
+                + ColonyInfoCache.retainOnly(keep);
+        ColonyXaeroCompat.LOGGER.info("[client] server knows {} colonies; dropped {} outdated cache entries",
+                keep.size(), removed);
     }
 }

@@ -17,5 +17,7 @@ public class ModNetwork {
     static void registerPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1").optional();
         registrar.playToClient(ColonySyncPayload.TYPE, ColonySyncPayload.CODEC, ClientColonySync::handle);
+        registrar.playToClient(ColonyRemovedPayload.TYPE, ColonyRemovedPayload.CODEC, ClientColonySync::handleRemoved);
+        registrar.playToClient(ColonyListPayload.TYPE, ColonyListPayload.CODEC, ClientColonySync::handleList);
     }
 }

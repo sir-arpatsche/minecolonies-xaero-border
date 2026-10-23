@@ -1,5 +1,6 @@
 package com.arpatsche.coloniexaerocompat.cache;
 
+import com.arpatsche.coloniexaerocompat.server.ColonyRef;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -13,11 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public final class ClaimCache {
 
@@ -82,6 +79,31 @@ public final class ClaimCache {
             return Set.of();
         }
         return dimClaims.getOrDefault(colonyId, Set.of());
+    }
+
+    /** Forgets one colony (it was deleted on the server). */
+    public static void removeColony(ResourceKey<Level> dimension, int colonyId) {
+        Map<Integer, Set<ChunkPos>> dimClaims = CLAIMS.get(dimension);
+        if (dimClaims != null && dimClaims.remove(colonyId) != null) {
+            dirty = true;
+        }
+    }
+
+    /** Forgets every colony that is not in the given set. Returns how many were dropped. */
+    public static int retainOnly(Set<ColonyRef> keep) {
+        int removed = 0;
+        for (Map.Entry<ResourceKey<Level>, Map<Integer, Set<ChunkPos>>> dimEntry : CLAIMS.entrySet()) {
+            ResourceKey<Level> dimension = dimEntry.getKey();
+            Iterator<Integer> it = dimEntry.getValue().keySet().iterator();
+            while (it.hasNext()) {
+                if (!keep.contains(new ColonyRef(dimension, it.next()))) {
+                    it.remove();
+                    removed++;
+                    dirty = true;
+                }
+            }
+        }
+        return removed;
     }
 
     public static Set<Integer> getColonyIds(ResourceKey<Level> dimension) {

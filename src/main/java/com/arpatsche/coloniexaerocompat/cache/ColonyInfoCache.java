@@ -2,6 +2,7 @@ package com.arpatsche.coloniexaerocompat.cache;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.arpatsche.coloniexaerocompat.server.ColonyRef;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -53,6 +54,30 @@ public final class ColonyInfoCache {
     private static Info get(ResourceKey<Level> dimension, int colonyId) {
         Map<Integer, Info> dim = INFOS.get(dimension);
         return dim == null ? null : dim.get(colonyId);
+    }
+
+    public static void remove(ResourceKey<Level> dimension, int colonyId) {
+        Map<Integer, Info> dim = INFOS.get(dimension);
+        if (dim != null && dim.remove(colonyId) != null) {
+            dirty = true;
+        }
+    }
+
+    /** Forgets every colony that is not in the given set. Returns how many were dropped. */
+    public static int retainOnly(java.util.Set<ColonyRef> keep) {
+        int removed = 0;
+        for (Map.Entry<ResourceKey<Level>, Map<Integer, Info>> dimEntry : INFOS.entrySet()) {
+            ResourceKey<Level> dimension = dimEntry.getKey();
+            java.util.Iterator<Integer> it = dimEntry.getValue().keySet().iterator();
+            while (it.hasNext()) {
+                if (!keep.contains(new ColonyRef(dimension, it.next()))) {
+                    it.remove();
+                    removed++;
+                    dirty = true;
+                }
+            }
+        }
+        return removed;
     }
 
     public static void clear() {

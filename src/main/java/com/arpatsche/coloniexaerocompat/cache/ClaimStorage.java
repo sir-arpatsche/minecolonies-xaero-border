@@ -40,22 +40,41 @@ public final class ClaimStorage {
         if (currentFile == null || !Files.exists(currentFile)) {
             return;
         }
+        JsonObject root;
         try {
-            JsonObject root = JsonParser.parseString(Files.readString(currentFile)).getAsJsonObject();
+            root = JsonParser.parseString(Files.readString(currentFile)).getAsJsonObject();
+        } catch (Exception e) {
+            ColonyXaeroCompat.LOGGER.warn("Could not read cache file: {}", currentFile, e);
+            clearAll();
+            return;
+        }
+
+        // Load every section on its own, so one damaged section does not cost the others.
+        try {
             // Older files only contained the claims directly at the top level.
             JsonObject claims = root.has("claims") ? root.getAsJsonObject("claims") : root;
             ClaimCache.fromJson(claims);
+        } catch (Exception e) {
+            ColonyXaeroCompat.LOGGER.warn("Ignoring damaged 'claims' section in {}", currentFile, e);
+            ClaimCache.clear();
+        }
+        try {
             if (root.has("buildings")) {
                 BuildingCache.fromJson(root.getAsJsonObject("buildings"));
             }
+        } catch (Exception e) {
+            ColonyXaeroCompat.LOGGER.warn("Ignoring damaged 'buildings' section in {}", currentFile, e);
+            BuildingCache.clear();
+        }
+        try {
             if (root.has("colonies")) {
                 ColonyInfoCache.fromJson(root.getAsJsonObject("colonies"));
             }
-            ColonyXaeroCompat.LOGGER.info("Cache loaded: {} ({} buildings)", currentFile, BuildingCache.totalCount());
         } catch (Exception e) {
-            ColonyXaeroCompat.LOGGER.warn("Could not read cache: {}", currentFile, e);
-            clearAll();
+            ColonyXaeroCompat.LOGGER.warn("Ignoring damaged 'colonies' section in {}", currentFile, e);
+            ColonyInfoCache.clear();
         }
+        ColonyXaeroCompat.LOGGER.info("Cache loaded: {} ({} buildings)", currentFile, BuildingCache.totalCount());
     }
 
     /** On leaving a world: save and empty the caches. */

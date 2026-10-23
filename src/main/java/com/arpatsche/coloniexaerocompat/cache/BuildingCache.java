@@ -1,5 +1,6 @@
 package com.arpatsche.coloniexaerocompat.cache;
 
+import com.arpatsche.coloniexaerocompat.server.ColonyRef;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -12,11 +13,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public final class BuildingCache {
 
@@ -68,6 +65,31 @@ public final class BuildingCache {
             dimBuildings.put(colonyId, new HashSet<>(buildings));
             dirty = true;
         }
+    }
+
+    /** Forgets one colony (it was deleted on the server). */
+    public static void removeColony(ResourceKey<Level> dimension, int colonyId) {
+        Map<Integer, Set<Info>> dimBuildings = BUILDINGS.get(dimension);
+        if (dimBuildings != null && dimBuildings.remove(colonyId) != null) {
+            dirty = true;
+        }
+    }
+
+    /** Forgets every colony that is not in the given set. Returns how many were dropped. */
+    public static int retainOnly(Set<ColonyRef> keep) {
+        int removed = 0;
+        for (Map.Entry<ResourceKey<Level>, Map<Integer, Set<Info>>> dimEntry : BUILDINGS.entrySet()) {
+            ResourceKey<Level> dimension = dimEntry.getKey();
+            Iterator<Integer> it = dimEntry.getValue().keySet().iterator();
+            while (it.hasNext()) {
+                if (!keep.contains(new ColonyRef(dimension, it.next()))) {
+                    it.remove();
+                    removed++;
+                    dirty = true;
+                }
+            }
+        }
+        return removed;
     }
 
     /** Ids of all colonies that have remembered buildings in the given dimension. */
