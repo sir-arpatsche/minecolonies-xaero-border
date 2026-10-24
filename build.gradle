@@ -150,6 +150,7 @@ dependencies {
     // MineColonies und Abhängigkeiten (JARs aus ./libs)
     implementation files("libs/xaeroworldmap-neoforge-1.21.1-1.47.0.jar")
     compileOnly files("libs/xaerolib-neoforge-1.21.1-1.7.3.jar")
+    implementation files("libs/xaerominimap-neoforge-1.21.1-26.6.0.jar")
 
     implementation files("libs/minecolonies-1.1.1403-1.21.1.jar")
     implementation files("libs/structurize-1.0.832-1.21.1.jar")
