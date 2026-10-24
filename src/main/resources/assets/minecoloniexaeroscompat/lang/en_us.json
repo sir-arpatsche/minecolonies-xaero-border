@@ -1,0 +1,9 @@
+{
+  "key.categories.minecoloniexaeroscompat": "MineColonies x Xaero Map",
+  "key.minecoloniexaeroscompat.toggle_claims": "Show/hide colony claims",
+  "key.minecoloniexaeroscompat.toggle_buildings": "Show/hide building icons",
+  "message.minecoloniexaeroscompat.claims_on": "Colony claims: shown",
+  "message.minecoloniexaeroscompat.claims_off": "Colony claims: hidden",
+  "message.minecoloniexaeroscompat.buildings_on": "Building icons: shown",
+  "message.minecoloniexaeroscompat.buildings_off": "Building icons: hidden"
+}

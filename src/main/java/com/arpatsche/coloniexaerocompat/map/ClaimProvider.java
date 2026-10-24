@@ -1,6 +1,7 @@
 package com.arpatsche.coloniexaerocompat.map;
 
 import com.arpatsche.coloniexaerocompat.cache.ClaimCache;
+import com.arpatsche.coloniexaerocompat.config.ClientConfig;
 import com.minecolonies.api.colony.IColonyManager;
 import com.minecolonies.api.colony.IColonyView;
 import net.minecraft.client.Minecraft;
@@ -23,6 +24,10 @@ public class ClaimProvider extends ElementRenderProvider<ClaimElement, ClaimCont
     public void begin(ElementRenderLocation location, ClaimContext context) {
         elements.clear();
         index = 0;
+
+        if (!ClientConfig.showClaims()) {
+            return; // claims are switched off; building icons are unaffected
+        }
 
         Level level = Minecraft.getInstance().level;
         if (level == null) {

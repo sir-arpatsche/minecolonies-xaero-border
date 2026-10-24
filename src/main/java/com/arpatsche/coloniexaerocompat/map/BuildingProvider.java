@@ -1,6 +1,8 @@
 package com.arpatsche.coloniexaerocompat.map;
 
 import com.arpatsche.coloniexaerocompat.cache.BuildingCache;
+import com.arpatsche.coloniexaerocompat.cache.ColonyInfoCache;
+import com.arpatsche.coloniexaerocompat.config.ClientConfig;
 import com.minecolonies.api.colony.IColonyManager;
 import com.minecolonies.api.colony.IColonyView;
 import net.minecraft.client.Minecraft;
@@ -25,6 +27,10 @@ public class BuildingProvider extends ElementRenderProvider<BuildingElement, Cla
         elements.clear();
         index = 0;
 
+        if (!ClientConfig.showBuildings()) {
+            return; // building icons are switched off
+        }
+
         Level level = Minecraft.getInstance().level;
         if (level == null) {
             return;
@@ -36,10 +42,13 @@ public class BuildingProvider extends ElementRenderProvider<BuildingElement, Cla
 
         for (int colonyId : BuildingCache.getColonyIds(dimension)) {
             IColonyView colony = IColonyManager.getInstance().getColonyView(colonyId, dimension);
-            if (colony == null && playerDimension) {
-                continue; // the colony no longer exists
+            String serverName = ColonyInfoCache.getName(dimension, colonyId);
+            // No view and nothing from the server: the colony no longer exists.
+            if (colony == null && serverName == null && playerDimension) {
+                continue;
             }
-            String name = colony != null ? colony.getName() : "Colony " + colonyId;
+            String name = colony != null ? colony.getName()
+                    : (serverName != null ? serverName : "Colony " + colonyId);
 
             for (BuildingCache.Info info : BuildingCache.getBuildings(dimension, colonyId)) {
                 elements.add(new BuildingElement(colonyId, name, info.typeKey(), info.pos()));

@@ -1,8 +1,9 @@
 # MineColonies Border on Xaero Map
 
 A NeoForge mod that shows [MineColonies](https://www.curseforge.com/minecraft/mc-mods/minecolonies)
-colonies on [Xaero's World Map](https://modrinth.com/mod/xaeros-world-map): their claimed area,
-their buildings, and a tooltip with details.
+colonies on [Xaero's World Map](https://modrinth.com/mod/xaeros-world-map) and, optionally,
+[Xaero's Minimap](https://modrinth.com/mod/xaeros-minimap): their claimed area, their buildings,
+and a tooltip with details.
 
 Inspired by [KaleYang/MineColoniesXaero](https://github.com/KaleYang/MineColoniesXaero).
 
@@ -18,10 +19,24 @@ Inspired by [KaleYang/MineColoniesXaero](https://github.com/KaleYang/MineColonie
   so they are still there after a restart.
 - **Shows the dimension the map is displaying** (Overworld, Nether, End), not just the one you
   are standing in.
+- **Xaero's Minimap support (optional).** If Xaero's Minimap is installed, claims and building icons
+  are drawn on it too, and they turn and zoom with the minimap.
+- **Switch it on and off.** Two keys under Controls show or hide the claim areas (K) and the
+  building icons (J), on the world map and in game. Your choice is saved.
 - **No need to visit every colony (optional server part).** Without help from the server, your game
   only learns about the claims and buildings of a colony once you have been near it. If the
   mod is also installed on the server, the server tells you about colonies you have never visited.
   Servers without the mod still work: the mod then behaves as before.
+
+## Keys
+
+| Key (default) | Action |
+|---|---|
+| K | Show/hide the colony claim areas |
+| J | Show/hide the building icons |
+
+Both can be changed under *Options > Controls* in the category "MineColonies x Xaero Map".
+The choice is saved in `config/minecoloniexaeroscompat-client.toml`.
 
 ## Using it on a server
 
@@ -48,9 +63,11 @@ Custom ranks created inside a colony do not count as members for `MEMBERS` mode.
 | Java               | 21                 |
 | MineColonies       | 1.1.1403           |
 | Xaero's World Map  | 1.47.0             |
+| Xaero's Minimap (optional) | 26.6.0     |
 
 MineColonies needs its own dependencies as well: Structurize, BlockUI, MultiPiston
-and Domum Ornamentum. Xaero's World Map is only needed on the client.
+and Domum Ornamentum. Xaero's World Map is only needed on the client. Xaero's Minimap is optional;
+only its normal display is supported (not tested with the minimap's safe mode or the Fair Play edition).
 
 Tested in singleplayer and with a dedicated server with two players. Other versions of
 MineColonies or Xaero's World Map may not work, because this mod uses Xaero's map element API,
@@ -59,7 +76,7 @@ which can change between versions.
 ## Installation
 
 Put the mod JAR into the `mods` folder of your client together with MineColonies, its
-dependencies and Xaero's World Map. To use the server part, put the same JAR into the `mods`
+dependencies and Xaero's World Map (and Xaero's Minimap, if you want it). To use the server part, put the same JAR into the `mods`
 folder of the server (together with MineColonies and its dependencies, without Xaero's World Map).
 
 ## Building from source
@@ -76,11 +93,8 @@ folder next to `build.gradle` and put these files into it:
 - `xaeroworldmap-neoforge-1.21.1-1.47.0.jar`
 - `xaerolib-neoforge-1.21.1-1.7.3.jar` (found inside the Xaero's World Map JAR under
   `META-INF/jarjar`)
+- `xaerominimap-neoforge-1.21.1-26.6.0.jar`
 
-
-## Credits
-
-The building icons are AI-generated artwork created for this mod.
 
 ## License
 
