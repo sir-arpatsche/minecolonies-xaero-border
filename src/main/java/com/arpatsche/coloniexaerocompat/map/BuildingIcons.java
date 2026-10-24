@@ -72,6 +72,14 @@ public final class BuildingIcons {
         add("school", "school");
         add("university", "university");
         add("stable", "stable");
+        add("swineherder", "swineherder", "swineherd");
+        add("florist", "florist", "flowershop");
+        add("stonemason", "stonemason", "mason");
+        add("mechanic", "mechanic");
+        add("brickyard", "stonesmeltery");
+        add("mysticalsite", "mysticalsite", "mystical_site");
+        add("plantation", "plantation");
+        add("alchemist", "alchemist");
     }
 
     private BuildingIcons() {
