@@ -1,5 +1,6 @@
 package com.arpatsche.coloniexaerocompat;
 
+import com.arpatsche.coloniexaerocompat.config.ClientConfig;
 import com.arpatsche.coloniexaerocompat.config.ServerConfig;
 import com.mojang.logging.LogUtils;
 import net.neoforged.fml.ModContainer;
@@ -20,5 +21,6 @@ public class ColonyXaeroCompat {
 
     public ColonyXaeroCompat(ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.COMMON, ServerConfig.SPEC, "minecoloniexaeroscompat-server.toml");
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC, "minecoloniexaeroscompat-client.toml");
     }
 }

@@ -1,0 +1,9 @@
+{
+  "key.categories.minecoloniexaeroscompat": "MineColonies x Xaero Map",
+  "key.minecoloniexaeroscompat.toggle_claims": "Kolonie-Gebiete ein-/ausblenden",
+  "key.minecoloniexaeroscompat.toggle_buildings": "Gebäude-Icons ein-/ausblenden",
+  "message.minecoloniexaeroscompat.claims_on": "Kolonie-Gebiete: sichtbar",
+  "message.minecoloniexaeroscompat.claims_off": "Kolonie-Gebiete: ausgeblendet",
+  "message.minecoloniexaeroscompat.buildings_on": "Gebäude-Icons: sichtbar",
+  "message.minecoloniexaeroscompat.buildings_off": "Gebäude-Icons: ausgeblendet"
+}
